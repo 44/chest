@@ -96,7 +96,7 @@ def cmd_ms(args):
 
     parent_dir = get_worktree_parent_dir()
     repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f".{repo_name}-ms")
+    worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp-ms")
 
     existing_wt = get_ms_worktree()
     if existing_wt:

@@ -8,6 +8,7 @@ from .utils import (
     branch_exists_local,
     find_remote_branch,
     get_default_branch,
+    get_ms_worktree,
     get_repo_name,
     get_worktree_parent_dir,
     has_uncommitted_changes,
@@ -30,17 +31,18 @@ def cmd_mb(args):
 
     if continue_merge:
         if not branch:
-            branch = find_pending_mb_branch()
-            if not branch:
+            pending_branch, _ = find_pending_mb_worktree()
+            if not pending_branch:
                 print("Error: no pending merge found", file=sys.stderr)
                 return 1
+            branch = pending_branch
         return cmd_mb_continue(branch, quiet)
 
     if not branch:
         print("Error: branch name required", file=sys.stderr)
         return 1
 
-    pending_branch = find_pending_mb_branch()
+    pending_branch, _ = find_pending_mb_worktree()
     if pending_branch:
         print(
             f"Error: pending merge for '{pending_branch}'",
@@ -83,16 +85,13 @@ def cmd_mb(args):
             )
             return 1
 
-    parent_dir = get_worktree_parent_dir()
-    repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f".{repo_name}-mb-{branch}")
-
-    if os.path.exists(worktree_path):
+    worktree = get_ms_worktree()
+    if worktree:
         if not quiet:
-            print(f"Reusing worktree at {worktree_path}...", file=sys.stderr)
+            print(f"Reusing worktree at {worktree['path']}...", file=sys.stderr)
         result = subprocess.run(
             ["git", "checkout", branch],
-            cwd=worktree_path,
+            cwd=worktree["path"],
             capture_output=True,
             text=True,
         )
@@ -102,6 +101,9 @@ def cmd_mb(args):
             )
             return 1
     else:
+        parent_dir = get_worktree_parent_dir()
+        repo_name = get_repo_name()
+        worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp-ms")
         os.makedirs(worktree_path, exist_ok=True)
         if not quiet:
             print(f"Creating worktree at {worktree_path}...", file=sys.stderr)
@@ -110,42 +112,37 @@ def cmd_mb(args):
             print(f"Error creating worktree: {result.stderr.strip()}", file=sys.stderr)
             os.rmdir(worktree_path)
             return 1
+        worktree = {"path": worktree_path}
 
     if not quiet:
         print(f"Merging origin/{default_branch} into {branch}...", file=sys.stderr)
 
     result = subprocess.run(
         ["git", "merge", f"origin/{default_branch}"],
-        cwd=worktree_path,
+        cwd=worktree["path"],
         capture_output=True,
         text=True,
     )
 
     if result.returncode != 0:
         console_stderr.print("[red]Merge conflict detected[/red]")
-        print(f"Worktree left at: {worktree_path}", file=sys.stderr)
+        print(f"Worktree left at: {worktree['path']}", file=sys.stderr)
         print("Resolve conflicts, then run: skeit mb --continue", file=sys.stderr)
         return 1
 
-    subprocess.run(
-        ["git", "checkout", "--detach", "HEAD"],
-        cwd=worktree_path,
-        capture_output=True,
-        text=True,
-    )
+    detach_worktree(worktree["path"])
 
     console.print(f"[green]Merged origin/{default_branch} into '{branch}'[/green]")
     return 0
 
 
 def cmd_mb_continue(branch, quiet):
-    parent_dir = get_worktree_parent_dir()
-    repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f".{repo_name}-mb-{branch}")
-
-    if not os.path.exists(worktree_path):
-        print("Error: worktree not found", file=sys.stderr)
+    worktree = get_ms_worktree()
+    if not worktree:
+        print("Error: no worktree found", file=sys.stderr)
         return 1
+
+    worktree_path = worktree["path"]
 
     if not is_merge_in_progress(worktree_path):
         result = run(["git", "-C", worktree_path, "rev-parse", "--verify", "HEAD"])
@@ -167,15 +164,7 @@ def cmd_mb_continue(branch, quiet):
             print(f"Error committing merge: {result.stderr.strip()}", file=sys.stderr)
             return 1
 
-    if not quiet:
-        print("Detaching worktree...", file=sys.stderr)
-
-    subprocess.run(
-        ["git", "checkout", "--detach", "HEAD"],
-        cwd=worktree_path,
-        capture_output=True,
-        text=True,
-    )
+    detach_worktree(worktree_path)
 
     default_branch = get_default_branch()
     console.print(f"[green]Merged origin/{default_branch} into '{branch}'[/green]")
@@ -183,14 +172,12 @@ def cmd_mb_continue(branch, quiet):
 
 
 def cmd_mb_abort(quiet):
-    branch = find_pending_mb_branch()
-    if not branch:
+    pending_branch, worktree = find_pending_mb_worktree()
+    if not worktree:
         print("Error: no pending merge found", file=sys.stderr)
         return 1
 
-    parent_dir = get_worktree_parent_dir()
-    repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f".{repo_name}-mb-{branch}")
+    worktree_path = worktree["path"]
 
     if not quiet:
         print("Aborting merge...", file=sys.stderr)
@@ -202,9 +189,13 @@ def cmd_mb_abort(quiet):
         text=True,
     )
 
-    if not quiet:
-        print("Detaching worktree...", file=sys.stderr)
+    detach_worktree(worktree_path)
 
+    print("Aborted.", file=sys.stderr)
+    return 0
+
+
+def detach_worktree(worktree_path):
     subprocess.run(
         ["git", "checkout", "--detach", "HEAD"],
         cwd=worktree_path,
@@ -212,24 +203,11 @@ def cmd_mb_abort(quiet):
         text=True,
     )
 
-    print("Aborted.", file=sys.stderr)
-    return 0
 
-
-def find_pending_mb_branch():
-    repo_name = get_repo_name()
-    result = run(["git", "worktree", "list", "--porcelain"])
-    if result.returncode != 0:
-        return None
-
-    prefix = f".{repo_name}-mb-"
-    for line in result.stdout.strip().split("\n"):
-        if line.startswith("worktree "):
-            path = line.split(" ", 1)[1]
-            if prefix in path:
-                for wt_line in result.stdout.strip().split("\n"):
-                    if wt_line.startswith("branch ") and path in result.stdout:
-                        branch = wt_line.split(" ", 1)[1]
-                        if branch.startswith("refs/heads/"):
-                            return branch.replace("refs/heads/", "")
-    return None
+def find_pending_mb_worktree():
+    worktree = get_ms_worktree()
+    if worktree and is_merge_in_progress(worktree["path"]):
+        branch = worktree.get("branch", "")
+        if branch.startswith("refs/heads/"):
+            return branch.replace("refs/heads/", ""), worktree
+    return None, None

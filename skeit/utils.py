@@ -143,7 +143,7 @@ def get_worktrees():
 def get_ms_worktree():
     parent_dir = get_worktree_parent_dir()
     repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f".{repo_name}-ms")
+    worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp-ms")
     for wt in get_worktrees():
         if wt.get("path") == worktree_path:
             return wt
