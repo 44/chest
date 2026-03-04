@@ -103,7 +103,7 @@ def cmd_mb(args):
     else:
         parent_dir = get_worktree_parent_dir()
         repo_name = get_repo_name()
-        worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp-ms")
+        worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp_ms")
         os.makedirs(worktree_path, exist_ok=True)
         if not quiet:
             print(f"Creating worktree at {worktree_path}...", file=sys.stderr)

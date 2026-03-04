@@ -143,7 +143,7 @@ def get_worktrees():
 def get_ms_worktree():
     parent_dir = get_worktree_parent_dir()
     repo_name = get_repo_name()
-    worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp-ms")
+    worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp_ms")
     for wt in get_worktrees():
         if wt.get("path") == worktree_path:
             return wt
@@ -151,8 +151,6 @@ def get_ms_worktree():
 
 
 def find_pending_ms_worktree():
-    from . import is_merge_in_progress
-
     wt = get_ms_worktree()
     if wt and is_merge_in_progress(wt["path"]):
         branch = wt.get("branch", "")
