@@ -41,17 +41,17 @@ def cmd_fff(args):
             result = fast_forward(branch, upstream)
             if result.returncode == 0:
                 console.print(
-                    f"[green]merged\t{branch}\t{upstream}\t{format_status(ahead, behind)}"
+                    f"[green]merged[/green]\t{branch} {upstream}\t{format_status(ahead, behind)}"
                 )
                 updated += 1
             else:
                 print(
-                    f"error\t{result.stderr.strip()}\t{branch}\t{upstream}",
+                    f"error\t{result.stderr.strip()} {branch}\t{upstream}",
                     file=sys.stderr,
                 )
         elif ahead > 0 or behind > 0:
             console.print(
-                f"[red]skipped\t{branch}\t{upstream}\t{format_status(ahead, behind)}"
+                f"[red]skipped[/red]\t{branch} {upstream}\t{format_status(ahead, behind)}"
             )
 
     if not quiet:
