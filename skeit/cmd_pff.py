@@ -31,17 +31,17 @@ def cmd_pff(args):
             result = run(["git", "push", remote, branch])
             if result.returncode == 0:
                 console.print(
-                    f"{branch} {upstream}: [green]pushed[/green] {format_status(ahead, behind)}"
+                    f"[green]pushed[/green]\t{branch} {upstream}\t{format_status(ahead, behind)}"
                 )
                 updated += 1
             else:
                 print(
-                    f"{branch} {upstream}: error {result.stderr.strip()}",
+                    f"error\t{branch} {upstream}: {result.stderr.strip()}",
                     file=sys.stderr,
                 )
         elif ahead > 0 or behind > 0:
             console.print(
-                f"{branch} {upstream}: [red]skipped[/red] {format_status(ahead, behind)}"
+                f"[red]skipped[/red]\t{branch} {upstream}\t{format_status(ahead, behind)}"
             )
 
     if not quiet:

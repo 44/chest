@@ -32,7 +32,7 @@ def cmd_fff(args):
     for remote in remotes:
         if not quiet:
             print(f"Fetching {remote}...", file=sys.stderr)
-        run(["git", "fetch", remote], capture=False)
+        run(["git", "fetch", "-p", remote], capture=False)
 
     updated = 0
     for branch, upstream in branches:
@@ -46,7 +46,7 @@ def cmd_fff(args):
                 updated += 1
             else:
                 print(
-                    f"error\t{result.stderr.strip()} {branch}\t{upstream}",
+                    f"error\t{branch} {upstream}: {result.stderr.strip()}",
                     file=sys.stderr,
                 )
         elif ahead > 0 or behind > 0:
