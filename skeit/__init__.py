@@ -8,6 +8,7 @@ import sys
 from .party import cmd_party
 
 from .cmd_alias import cmd_alias
+from .cmd_cleanup import cmd_cleanup
 from .cmd_fff import cmd_fff
 from .cmd_mb import cmd_mb
 from .cmd_ms import cmd_ms
@@ -153,6 +154,19 @@ def main():
         "diff_spec", nargs="?", help="diff specification (e.g., origin/main...HEAD)"
     )
     wc_parser.set_defaults(func=cmd_wc)
+
+    cleanup_parser = subparsers.add_parser(
+        "cleanup",
+        help="delete local branches merged into default branch",
+        parents=[common],
+    )
+    cleanup_parser.add_argument(
+        "-n", "--dry-run", action="store_true", help="show what would be deleted"
+    )
+    cleanup_parser.add_argument(
+        "-f", "--force", action="store_true", help="force delete branches"
+    )
+    cleanup_parser.set_defaults(func=cmd_cleanup)
 
     args = parser.parse_args()
     return args.func(args)
