@@ -1,3 +1,16 @@
+test:
+	#!/usr/bin/env bash
+	set -e
+	
+	for test_script in test_*.sh; do
+		echo "Running $test_script..."
+		chmod +x "$test_script"
+		./"$test_script"
+		echo ""
+	done
+	
+	echo "All tests passed!"
+
 lint *ARGS:
 	uvx ruff check . {{ ARGS }}
 

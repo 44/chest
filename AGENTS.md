@@ -84,6 +84,12 @@ chmod +x test_party.sh
 ./test_party.sh
 ```
 
+5. **Run all tests**:
+
+```bash
+just test
+```
+
 5. **Commit testing scripts** - All test scripts must be committed to the repository. They serve as:
    - Examples for creating new test scripts
    - Regression test suite for CI/CD
@@ -101,6 +107,11 @@ chmod +x test_party.sh
 #### Existing Test Scripts
 
 - `test_party.sh` - Comprehensive test for party mode functionality. Use as reference for new tests.
+- `test_fff.sh` - Test fetch-fast-forward command
+- `test_pff.sh` - Test push-fast-forward command
+- `test_ms.sh` - Test merge-switch command
+- `test_mb.sh` - Test merge-origin-default-branch command
+- `test_wc.sh` - Test wc (word count) command
 
 ### Code Style
 
