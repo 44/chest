@@ -164,3 +164,30 @@ def is_merge_in_progress(worktree_path):
     if os.path.exists(merge_head):
         return True
     return False
+
+
+def get_rb_worktree():
+    parent_dir = get_worktree_parent_dir()
+    repo_name = get_repo_name()
+    worktree_path = os.path.join(parent_dir, f"{repo_name}_tmp_rb")
+    for wt in get_worktrees():
+        if wt.get("path") == worktree_path:
+            return wt
+    return None
+
+
+def find_pending_rb_worktree():
+    wt = get_rb_worktree()
+    if wt and is_rebase_in_progress(wt["path"]):
+        branch = wt.get("branch", "")
+        if branch.startswith("refs/heads/"):
+            return branch.replace("refs/heads/", ""), wt
+    return None, None
+
+
+def is_rebase_in_progress(worktree_path):
+    rebase_apply = os.path.join(worktree_path, ".git", "rebase-apply")
+    rebase_merge = os.path.join(worktree_path, ".git", "rebase-merge")
+    if os.path.exists(rebase_apply) or os.path.exists(rebase_merge):
+        return True
+    return False

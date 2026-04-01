@@ -13,6 +13,7 @@ from .cmd_fff import cmd_fff
 from .cmd_mb import cmd_mb
 from .cmd_ms import cmd_ms
 from .cmd_pff import cmd_pff
+from .cmd_rb import cmd_rb
 from .cmd_wc import cmd_wc
 
 
@@ -86,6 +87,24 @@ def main():
         help="abort pending merge and detach worktree",
     )
     mb_parser.set_defaults(func=cmd_mb)
+
+    rb_parser = subparsers.add_parser(
+        "rb", help="rebase branch onto default branch via worktree", parents=[common]
+    )
+    rb_parser.add_argument("branch", nargs="?", help="branch to rebase")
+    rb_parser.add_argument(
+        "-c",
+        "--continue",
+        dest="cont",
+        action="store_true",
+        help="continue after resolving conflicts",
+    )
+    rb_parser.add_argument(
+        "--abort",
+        action="store_true",
+        help="abort pending rebase and detach worktree",
+    )
+    rb_parser.set_defaults(func=cmd_rb)
 
     party_parser = subparsers.add_parser(
         "party", help="party mode for merging multiple branches", parents=[common]
@@ -169,7 +188,7 @@ def main():
     cleanup_parser.set_defaults(func=cmd_cleanup)
 
     args = parser.parse_args()
-    return args.func(args)
+    sys.exit(args.func(args))
 
 
 if __name__ == "__main__":
